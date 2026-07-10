@@ -38,8 +38,6 @@ import com.geosecure.attendance.security.jwt.JwtAuthenticationFilter;
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-    @Value("${geosecure.cors.allowed-origins}")
-    private String allowedOrigins;
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final JwtAuthenticationEntryPoint authEntryPoint;
@@ -138,7 +136,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of(allowedOrigins));
+        configuration.setAllowedOrigins( "https://abdulvahab7.github.io/GeoSecure_frontend/");
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With"));
         configuration.setAllowCredentials(true);
