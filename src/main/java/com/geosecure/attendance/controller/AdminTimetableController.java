@@ -33,4 +33,17 @@ public class AdminTimetableController {
                                                   @Valid @RequestBody TimetableRequest request) {
         return ApiResponse.ok(timetableService.create(request, principal.getId()), "Timetable slot created");
     }
+
+    @PutMapping("/{id}")
+    public ApiResponse<TimetableResponse> update(@AuthenticationPrincipal UserPrincipal principal,
+                                                  @PathVariable Integer id,
+                                                  @Valid @RequestBody TimetableRequest request) {
+        return ApiResponse.ok(timetableService.update(id, request, principal.getId()), "Timetable slot updated");
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable Integer id) {
+        timetableService.delete(id);
+        return ApiResponse.ok(null, "Timetable slot deleted");
+    }
 }
