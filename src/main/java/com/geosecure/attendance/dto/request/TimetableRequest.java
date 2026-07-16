@@ -15,7 +15,11 @@ public class TimetableRequest {
     @NotNull(message = "Subject is required")
     private Integer subjectId;
 
-    /** Optional: the faculty_subjects row this slot draws from (recommended so ownership checks work cleanly). */
+    /**
+     * Deprecated/ignored: the server always resolves (and creates, if missing) the correct
+     * faculty_subjects row from facultyId + subjectId + classId. A client-supplied value here
+     * is never used - that was the source of the faculty_subject_id-ends-up-NULL bug.
+     */
     private Integer facultySubjectId;
 
     @NotNull(message = "Day of week is required")
