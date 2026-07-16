@@ -71,4 +71,22 @@ public interface TimetableRepository extends JpaRepository<Timetable, Integer> {
 
     boolean existsByClassEntity_IdAndDayOfWeekAndSessionNumber(
             Integer classId, Timetable.DayOfWeek day, Integer sessionNumber);
+
+    /** Class conflict check, excluding a given slot (used on update). */
+    boolean existsByClassEntity_IdAndDayOfWeekAndSessionNumberAndIdNot(
+            Integer classId, Timetable.DayOfWeek day, Integer sessionNumber, Integer excludeId);
+
+    /** Faculty conflict: same faculty already teaching another class in this slot. */
+    boolean existsByFaculty_IdAndDayOfWeekAndSessionNumber(
+            Integer facultyId, Timetable.DayOfWeek day, Integer sessionNumber);
+
+    boolean existsByFaculty_IdAndDayOfWeekAndSessionNumberAndIdNot(
+            Integer facultyId, Timetable.DayOfWeek day, Integer sessionNumber, Integer excludeId);
+
+    /** Room conflict: same room already booked in this slot (only checked when a room is provided). */
+    boolean existsByRoomNumberAndDayOfWeekAndSessionNumber(
+            String roomNumber, Timetable.DayOfWeek day, Integer sessionNumber);
+
+    boolean existsByRoomNumberAndDayOfWeekAndSessionNumberAndIdNot(
+            String roomNumber, Timetable.DayOfWeek day, Integer sessionNumber, Integer excludeId);
 }
