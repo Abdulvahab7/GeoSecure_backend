@@ -33,4 +33,8 @@ public interface FacultySubjectRepository extends JpaRepository<FacultySubject, 
 
     boolean existsByFaculty_IdAndSubject_IdAndClassEntity_IdAndAcademicYear(
             Integer facultyId, Integer subjectId, Integer classId, String academicYear);
+
+    /** Used by the timetable grid editor to auto-resolve (never ask the user for) the faculty_subject_id. */
+    Optional<FacultySubject> findByFaculty_IdAndSubject_IdAndClassEntity_IdAndAcademicYear(
+            Integer facultyId, Integer subjectId, Integer classId, String academicYear);
 }
