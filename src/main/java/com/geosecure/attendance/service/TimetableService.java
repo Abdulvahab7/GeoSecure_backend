@@ -11,7 +11,14 @@ public interface TimetableService {
     /** Admin/coordinator: create a slot. */
     TimetableResponse create(TimetableRequest request, Integer actingUserId);
 
+    /** Admin/coordinator: edit an existing slot (grid editor). */
+    TimetableResponse update(Integer timetableId, TimetableRequest request, Integer actingUserId);
+
+    /** Admin/coordinator: delete a slot (grid editor). */
+    void delete(Integer timetableId);
+
     List<TimetableResponse> findForClass(Integer classId);
+
 
     List<TimetableResponse> todayForFaculty(Integer facultyId);
 
