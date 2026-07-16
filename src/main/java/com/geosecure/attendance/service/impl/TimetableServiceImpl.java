@@ -52,6 +52,17 @@ public class TimetableServiceImpl implements TimetableService {
             throw new DuplicateResourceException("A timetable slot already exists for this class on "
                     + request.getDayOfWeek() + " session " + request.getSessionNumber() + ".");
         }
+        if (timetableRepository.existsByFaculty_IdAndDayOfWeekAndSessionNumber(
+                request.getFacultyId(), request.getDayOfWeek(), request.getSessionNumber())) {
+            throw new DuplicateResourceException("This faculty is already teaching another class on "
+                    + request.getDayOfWeek() + " session " + request.getSessionNumber() + ".");
+        }
+        if (request.getRoomNumber() != null && !request.getRoomNumber().isBlank()
+                && timetableRepository.existsByRoomNumberAndDayOfWeekAndSessionNumber(
+                        request.getRoomNumber(), request.getDayOfWeek(), request.getSessionNumber())) {
+            throw new DuplicateResourceException("Room " + request.getRoomNumber() + " is already booked on "
+                    + request.getDayOfWeek() + " session " + request.getSessionNumber() + ".");
+        }
 
         ClassEntity classEntity = classRepository.findById(request.getClassId())
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found: " + request.getClassId()));
@@ -67,14 +78,82 @@ public class TimetableServiceImpl implements TimetableService {
         timetable.setDayOfWeek(request.getDayOfWeek());
         timetable.setSessionNumber(request.getSessionNumber());
         timetable.setRoomNumber(request.getRoomNumber());
-
-        if (request.getFacultySubjectId() != null) {
-            FacultySubject fs = facultySubjectRepository.findById(request.getFacultySubjectId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Faculty-subject assignment not found: " + request.getFacultySubjectId()));
-            timetable.setFacultySubject(fs);
-        }
+        // faculty_subject_id is never taken from the client - it is always resolved/created server-side.
+        timetable.setFacultySubject(resolveFacultySubject(faculty, subject, classEntity));
 
         return TimetableResponse.from(timetableRepository.save(timetable));
+    }
+
+    @Override
+    @Transactional
+    public TimetableResponse update(Integer timetableId, TimetableRequest request, Integer actingUserId) {
+        Timetable timetable = timetableRepository.findById(timetableId)
+                .orElseThrow(() -> new ResourceNotFoundException("Timetable slot not found: " + timetableId));
+
+        if (timetableRepository.existsByClassEntity_IdAndDayOfWeekAndSessionNumberAndIdNot(
+                request.getClassId(), request.getDayOfWeek(), request.getSessionNumber(), timetableId)) {
+            throw new DuplicateResourceException("A timetable slot already exists for this class on "
+                    + request.getDayOfWeek() + " session " + request.getSessionNumber() + ".");
+        }
+        if (timetableRepository.existsByFaculty_IdAndDayOfWeekAndSessionNumberAndIdNot(
+                request.getFacultyId(), request.getDayOfWeek(), request.getSessionNumber(), timetableId)) {
+            throw new DuplicateResourceException("This faculty is already teaching another class on "
+                    + request.getDayOfWeek() + " session " + request.getSessionNumber() + ".");
+        }
+        if (request.getRoomNumber() != null && !request.getRoomNumber().isBlank()
+                && timetableRepository.existsByRoomNumberAndDayOfWeekAndSessionNumberAndIdNot(
+                        request.getRoomNumber(), request.getDayOfWeek(), request.getSessionNumber(), timetableId)) {
+            throw new DuplicateResourceException("Room " + request.getRoomNumber() + " is already booked on "
+                    + request.getDayOfWeek() + " session " + request.getSessionNumber() + ".");
+        }
+
+        ClassEntity classEntity = classRepository.findById(request.getClassId())
+                .orElseThrow(() -> new ResourceNotFoundException("Class not found: " + request.getClassId()));
+        Faculty faculty = facultyRepository.findById(request.getFacultyId())
+                .orElseThrow(() -> new ResourceNotFoundException("Faculty not found: " + request.getFacultyId()));
+        Subject subject = subjectRepository.findById(request.getSubjectId())
+                .orElseThrow(() -> new ResourceNotFoundException("Subject not found: " + request.getSubjectId()));
+
+        timetable.setClassEntity(classEntity);
+        timetable.setFaculty(faculty);
+        timetable.setSubject(subject);
+        timetable.setDayOfWeek(request.getDayOfWeek());
+        timetable.setSessionNumber(request.getSessionNumber());
+        timetable.setRoomNumber(request.getRoomNumber());
+        timetable.setFacultySubject(resolveFacultySubject(faculty, subject, classEntity));
+
+        return TimetableResponse.from(timetableRepository.save(timetable));
+    }
+
+    @Override
+    @Transactional
+    public void delete(Integer timetableId) {
+        if (!timetableRepository.existsById(timetableId)) {
+            throw new ResourceNotFoundException("Timetable slot not found: " + timetableId);
+        }
+        timetableRepository.deleteById(timetableId);
+    }
+
+    /**
+     * Resolves the faculty_subjects row for (faculty, subject, class) under the class's own
+     * academic year, creating it on the fly if this is the first time this faculty has been
+     * timetabled for this subject/class. This is what fixes the "faculty_subject_id ends up
+     * NULL" bug: the caller (admin timetable grid) only ever sends facultyId/subjectId/classId,
+     * never a faculty_subject_id.
+     */
+    private FacultySubject resolveFacultySubject(Faculty faculty, Subject subject, ClassEntity classEntity) {
+        String academicYear = classEntity.getAcademicYear();
+        return facultySubjectRepository
+                .findByFaculty_IdAndSubject_IdAndClassEntity_IdAndAcademicYear(
+                        faculty.getId(), subject.getId(), classEntity.getId(), academicYear)
+                .orElseGet(() -> {
+                    FacultySubject fs = new FacultySubject();
+                    fs.setFaculty(faculty);
+                    fs.setSubject(subject);
+                    fs.setClassEntity(classEntity);
+                    fs.setAcademicYear(academicYear);
+                    return facultySubjectRepository.save(fs);
+                });
     }
 
     @Override
