@@ -12,11 +12,13 @@ import com.geosecure.attendance.dto.response.QrSessionResponse;
 import com.geosecure.attendance.dto.response.StudentResponse;
 import com.geosecure.attendance.dto.response.TimetableResponse;
 import com.geosecure.attendance.entity.Faculty;
+import com.geosecure.attendance.exception.ForbiddenException;
 import com.geosecure.attendance.security.UserPrincipal;
 import com.geosecure.attendance.service.AttendanceService;
 import com.geosecure.attendance.service.CoordinatorService;
 import com.geosecure.attendance.service.FacultyService;
 import com.geosecure.attendance.service.FacultySubjectService;
+import com.geosecure.attendance.service.ReportService;
 import com.geosecure.attendance.service.TimetableService;
 
 import jakarta.validation.Valid;
@@ -46,19 +48,22 @@ public class FacultyController {
     private final AttendanceService attendanceService;
     private final CoordinatorService coordinatorService;
     private final UserService userService;
+    private final ReportService reportService;
 
     public FacultyController(FacultyService facultyService,
                              TimetableService timetableService,
                              FacultySubjectService facultySubjectService,
                              AttendanceService attendanceService,
                              CoordinatorService coordinatorService,
-                             UserService userService) {
+                             UserService userService,
+                             ReportService reportService) {
         this.facultyService = facultyService;
         this.timetableService = timetableService;
         this.facultySubjectService = facultySubjectService;
         this.attendanceService = attendanceService;
         this.coordinatorService = coordinatorService;
         this.userService = userService;
+        this.reportService = reportService;
     }
 
     @GetMapping("/profile")
@@ -94,6 +99,29 @@ public class FacultyController {
     public ApiResponse<List<ClassResponse>> myCoordinatedClasses(@AuthenticationPrincipal UserPrincipal principal) {
         Faculty faculty = facultyService.requireByUserId(principal.getId());
         return ApiResponse.ok(facultyService.myCoordinatedClasses(faculty.getId()));
+    }
+
+    // --- Reports ---
+
+    /**
+     * Faculty-scoped subject report. Replaces the old frontend call to
+     * GET /api/admin/reports/faculty-subjects/{id}, which is gated by
+     * hasRole("ADMIN") in SecurityConfig and always 403s for a FACULTY-role
+     * JWT. This endpoint also verifies the facultySubjectId actually belongs
+     * to the calling faculty member before returning data - the admin
+     * endpoint has no such ownership check, so simply relaxing its role
+     * requirement would have let any faculty pull any other faculty's report.
+     */
+    @GetMapping("/reports/subject/{facultySubjectId}")
+    public ApiResponse<List<Map<String, Object>>> subjectReport(@AuthenticationPrincipal UserPrincipal principal,
+                                                                  @PathVariable Integer facultySubjectId) {
+        Faculty faculty = facultyService.requireByUserId(principal.getId());
+        boolean owns = facultySubjectService.myAssignments(faculty.getId()).stream()
+                .anyMatch(fs -> fs.getId().equals(facultySubjectId));
+        if (!owns) {
+            throw new ForbiddenException("This subject assignment does not belong to you.");
+        }
+        return ApiResponse.ok(reportService.subjectReport(facultySubjectId));
     }
 
     // --- Attendance / QR ---
