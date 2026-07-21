@@ -15,6 +15,7 @@ import jakarta.persistence.UniqueConstraint;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /**
  * Maps to: attendance_records table.
@@ -56,7 +57,7 @@ public class AttendanceRecord {
     private BigDecimal distanceMeters;
 
     @Column(name = "scanned_at", nullable = false)
-    private LocalDateTime scannedAt = LocalDateTime.now();
+    private LocalDateTime scannedAt = LocalDateTime.now(ZoneOffset.UTC);
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
