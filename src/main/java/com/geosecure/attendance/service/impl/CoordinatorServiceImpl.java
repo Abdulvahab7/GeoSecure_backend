@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -134,7 +135,7 @@ public class CoordinatorServiceImpl implements CoordinatorService {
 
     /** Central mutation point: updates the class, closes the previous history row, opens a new one. */
     private void applyChange(ClassEntity classEntity, Faculty oldFaculty, Faculty newFaculty, User actingUser, String reason) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
 
         historyRepository.findByClassEntity_IdAndReleasedAtIsNull(classEntity.getId())
                 .forEach(h -> {
