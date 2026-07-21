@@ -36,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,8 +92,8 @@ public class AttendanceServiceImpl implements AttendanceService {
         }
         FacultySubject facultySubject = timetable.getFacultySubject();
 
-        LocalDate today = LocalDate.now();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
 
         List<AttendanceSession> active = sessionRepository.findActiveSessionsForSlotToday(facultySubject.getId(), today, now);
         if (!active.isEmpty()) {
@@ -136,7 +137,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         if (!Boolean.TRUE.equals(session.getIsActive())) {
             throw new QrExpiredException("This QR session has already ended.");
         }
-        if (LocalDateTime.now().isAfter(session.getExpiresAt())) {
+        if (LocalDateTime.now(ZoneOffset.UTC).isAfter(session.getExpiresAt())) {
             sessionRepository.deactivate(session.getId());
             throw new QrExpiredException("This QR code has expired. Ask your faculty to generate a new one.");
         }
@@ -165,7 +166,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         record.setStudentLatitude(BigDecimal.valueOf(request.getLatitude()));
         record.setStudentLongitude(BigDecimal.valueOf(request.getLongitude()));
         record.setDistanceMeters(BigDecimal.valueOf(distance).setScale(2, java.math.RoundingMode.HALF_UP));
-        record.setScannedAt(LocalDateTime.now());
+        record.setScannedAt(LocalDateTime.now(ZoneOffset.UTC));
         record.setStatus(AttendanceRecord.Status.present);
         record.setVerificationMethod(AttendanceRecord.VerificationMethod.qr_scan);
 
@@ -216,7 +217,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         record.setVerificationMethod(AttendanceRecord.VerificationMethod.manual);
         record.setRemarks(request.getRemarks());
         if (record.getScannedAt() == null) {
-            record.setScannedAt(LocalDateTime.now());
+            record.setScannedAt(LocalDateTime.now(ZoneOffset.UTC));
         }
         if (record.getStudentLatitude() == null) {
             record.setStudentLatitude(session.getFacultyLatitude());
