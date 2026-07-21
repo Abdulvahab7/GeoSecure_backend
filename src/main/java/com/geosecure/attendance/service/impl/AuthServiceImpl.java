@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @Service
@@ -105,7 +106,7 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findById(principal.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        user.setLastLogin(LocalDateTime.now());
+        user.setLastLogin(LocalDateTime.now(ZoneOffset.UTC));
         userRepository.save(user);
 
         String accessToken = tokenProvider.generateAccessToken(authentication);
