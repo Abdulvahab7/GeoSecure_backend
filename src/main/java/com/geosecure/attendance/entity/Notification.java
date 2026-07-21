@@ -1,5 +1,7 @@
 package com.geosecure.attendance.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -23,6 +25,14 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    // Never serialized: this is a LAZY proxy and spring.jpa.open-in-view is
+    // disabled, so touching it from Jackson outside the service's
+    // transaction threw LazyInitializationException -> 500 on every
+    // GET /api/notifications* call (surfaced most visibly on the faculty
+    // dashboard, which loads it on every page view). Callers only ever
+    // need the recipient's own userId, which they already have from their
+    // auth principal, so there's no need to expose it in the payload at all.
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
