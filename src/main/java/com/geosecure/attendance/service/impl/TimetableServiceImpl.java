@@ -165,7 +165,7 @@ public class TimetableServiceImpl implements TimetableService {
     @Override
     @Transactional(readOnly = true)
     public List<TimetableResponse> todayForFaculty(Integer facultyId) {
-        Timetable.DayOfWeek today = mapToSchoolDay(java.time.LocalDate.now().getDayOfWeek());
+        Timetable.DayOfWeek today = mapToSchoolDay(java.time.LocalDate.now(java.time.ZoneOffset.UTC).getDayOfWeek());
         if (today == null) {
             return List.of();
         }
